@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python Computer Quiz</title>
+<style>
+:root { color-scheme: dark; --bg:#0f172a; --panel:#111827; --card:#1e293b; --blue:#38bdf8; --green:#22c55e; --muted:#cbd5e1; }
+* { box-sizing:border-box; }
+body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:22px; background:var(--bg); color:#fff; font-family:Arial, sans-serif; }
+.app { width:min(850px,100%); min-height:530px; background:var(--bg); }
+header { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; padding:16px 20px; background:var(--panel); border-radius:12px; }
+.brand { color:var(--blue); font-weight:800; letter-spacing:.4px; }
+.small { color:var(--muted); font-size:14px; }
+main { padding:18px 26px 26px; text-align:center; }
+h1 { color:var(--blue); font-size:clamp(26px,5vw,36px); margin:24px 0 12px; }
+.subtitle { color:var(--muted); font-size:17px; line-height:1.5; }
+label { display:block; margin:34px 0 10px; font-weight:bold; }
+input { width:min(340px,100%); padding:13px 15px; border:1px solid #475569; border-radius:8px; background:var(--card); color:white; font-size:16px; text-align:center; }
+button { border:0; border-radius:8px; padding:12px 20px; font-size:15px; font-weight:700; cursor:pointer; transition:transform .08s, opacity .2s; }
+button:active { transform:scale(.98); }
+.primary { background:#2563eb; color:white; }
+.submit { background:var(--green); color:#052e16; margin-top:22px; }
+button:disabled { opacity:.45; cursor:not-allowed; }
+.start { margin-top:26px; padding:14px 38px; }
+footer { margin-top:28px; color:#94a3b8; font-size:12px; }
+.hidden { display:none !important; }
+.progress { height:8px; background:#334155; border-radius:99px; overflow:hidden; margin:14px 0 26px; }
+#progressFill { height:100%; width:0; background:var(--blue); transition:width .2s; }
+.options { display:grid; gap:10px; margin:24px auto 0; max-width:650px; text-align:left; }
+.option { width:100%; background:var(--card); color:white; border:2px solid transparent; text-align:left; padding:15px 18px; font-weight:500; }
+.option.selected { background:#1d4ed8; border-color:var(--blue); }
+#question { font-size:clamp(20px,3vw,25px); line-height:1.35; margin:20px 0; }
+#feedback { min-height:24px; margin-top:12px; font-weight:bold; }
+.result-score { font-size:54px; color:var(--green); font-weight:800; margin:18px 0; }
+.result-message { font-size:20px; font-weight:bold; margin:18px 0; }
+@media(max-width:520px) { body { padding:10px; } main { padding:12px 6px 22px; } header { padding:12px; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header><div class="brand">PYTHON COMPUTER QUIZ</div><div class="small">5 Questions · Multiple Choice</div></header>
+  <main>
+    <section id="welcome">
+      <h1>PYTHON COMPUTER QUIZ</h1>
+      <div class="subtitle">Test Your Computer Science Knowledge!</div>
+      <label for="playerName">Enter Your Name</label>
+      <input id="playerName" maxlength="40" placeholder="Your name" autocomplete="name">
+      <div><button id="startBtn" class="primary start">START QUIZ</button></div>
+      <footer>5 Questions&nbsp; | &nbsp;Multiple Choice&nbsp; | &nbsp;Instant Results</footer>
+    </section>
+    <section id="quiz" class="hidden">
+      <div style="display:flex;justify-content:space-between;gap:10px;font-weight:bold;color:var(--blue)">
+        <span id="questionNumber">Question 1 of 5</span><span id="scoreText" style="color:var(--green)">Score: 0</span>
+      </div>
+      <div class="progress"><div id="progressFill"></div></div>
+      <div id="question"></div>
+      <div id="options" class="options"></div>
+      <div id="feedback" role="status" aria-live="polite"></div>
+      <button id="submitBtn" class="submit">SUBMIT ANSWER</button>
+    </section>
+    <section id="result" class="hidden">
+      <h1>QUIZ COMPLETED!</h1>
+      <div id="wellDone" class="subtitle"></div>
+      <div id="finalScore" class="result-score"></div>
+      <div id="percentage" class="subtitle"></div>
+      <div id="performance" class="result-message"></div>
+      <button id="playAgainBtn" class="primary start">PLAY AGAIN</button>
+    </section>
+  </main>
+</div>
+<script>
+const originalQuestions = [
+  { question: "Which language is used for AI and Machine Learning?", options: ["HTML", "Python", "CSS", "SQL"], answer: "Python" },
+  { question: "What does CPU stand for?", options: ["Central Processing Unit", "Computer Personal Unit", "Central Program Utility", "Control Processing Unit"], answer: "Central Processing Unit" },
+  { question: "Which data structure follows FIFO?", options: ["Stack", "Tree", "Queue", "Graph"], answer: "Queue" },
+  { question: "Which protocol is used for secure web communication?", options: ["HTTP", "FTP", "HTTPS", "SMTP"], answer: "HTTPS" },
+  { question: "Which symbol is used for comments in Python?", options: ["//", "#", "/* */", "--"], answer: "#" }
+];
+let questions = [], currentQuestion = 0, score = 0, playerName = "", selectedAnswer = "";
+const $ = id => document.getElementById(id);
+function show(section) { ["welcome","quiz","result"].forEach(id => $(id).classList.toggle("hidden", id !== section)); }
+function startQuiz() {
+  playerName = $("playerName").value.trim();
+  if (!playerName) { alert("Please enter your name."); $("playerName").focus(); return; }
+  questions = [...originalQuestions].sort(() => Math.random() - 0.5);
+  currentQuestion = 0; score = 0; selectedAnswer = "";
+  show("quiz"); renderQuestion();
+}
+function renderQuestion() {
+  selectedAnswer = "";
+  const q = questions[currentQuestion];
+  $("questionNumber").textContent = `Question ${currentQuestion + 1} of ${questions.length}`;
+  $("scoreText").textContent = `Score: ${score}`;
+  $("progressFill").style.width = `${((currentQuestion + 1) / questions.length) * 100}%`;
+  $("question").textContent = q.question;
+  $("feedback").textContent = "";
+  $("options").replaceChildren();
+  q.options.forEach(option => {
+    const btn = document.createElement("button");
+    btn.className = "option"; btn.type = "button"; btn.textContent = option;
+    btn.addEventListener("click", () => {
+      selectedAnswer = option;
+      document.querySelectorAll(".option").forEach(b => b.classList.toggle("selected", b === btn));
+    });
+    $("options").appendChild(btn);
+  });
+}
+function submitAnswer() {
+  if (!selectedAnswer) { $("feedback").textContent = "Please select an answer first."; $("feedback").style.color = "#facc15"; return; }
+  const correct = questions[currentQuestion].answer;
+  if (selectedAnswer === correct) { score++; $("feedback").textContent = "Correct Answer!"; $("feedback").style.color = "#22c55e"; }
+  else { $("feedback").textContent = `Wrong answer. Correct answer: ${correct}`; $("feedback").style.color = "#f87171"; }
+  $("submitBtn").disabled = true;
+  document.querySelectorAll(".option").forEach(b => b.disabled = true);
+  window.setTimeout(() => {
+    currentQuestion++;
+    if (currentQuestion < questions.length) { $("submitBtn").disabled = false; renderQuestion(); }
+    else showResult();
+  }, 850);
+}
+function showResult() {
+  show("result");
+  const percentage = (score / questions.length) * 100;
+  $("wellDone").textContent = `Well Done, ${playerName}!`;
+  $("finalScore").textContent = `${score} / ${questions.length}`;
+  $("percentage").textContent = `Percentage: ${percentage.toFixed(2)}%`;
+  let message = "Need More Practice!", color = "#ef4444";
+  if (percentage >= 80) { message = "Excellent Performance!"; color = "#22c55e"; }
+  else if (percentage >= 60) { message = "Good Performance!"; color = "#38bdf8"; }
+  else if (percentage >= 40) { message = "Keep Practicing!"; color = "#facc15"; }
+  $("performance").textContent = message; $("performance").style.color = color;
+}
+$("startBtn").addEventListener("click", startQuiz);
+$("playerName").addEventListener("keydown", e => { if (e.key === "Enter") startQuiz(); });
+$("submitBtn").addEventListener("click", submitAnswer);
+$("playAgainBtn").addEventListener("click", () => { $("playerName").value = playerName; show("welcome"); });
+</script>
+</body>
+</html>
